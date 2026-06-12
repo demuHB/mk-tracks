@@ -91,6 +91,12 @@
             padding: 20px;
             flex-shrink: 0;
         }
+        .tab-content.inactive {
+            height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow: hidden;
+        }
         .button-group {
             display: flex;
             gap: 10px;
@@ -961,6 +967,7 @@
             updateDisplay();
             setupConfirmModal();
             setupSwipeDetection();
+            switchTab(0);
         }
 
         function setupSwipeDetection() {
@@ -990,6 +997,9 @@
             currentTab = index;
             document.querySelectorAll('.tab').forEach((tab, i) => {
                 tab.classList.toggle('active', i === index);
+            });
+            document.querySelectorAll('.tab-content').forEach((content, i) => {
+                content.classList.toggle('inactive', i !== index);
             });
             document.getElementById('tab-wrapper').style.transform = `translateX(-${index * 33.333}%)`;
             setTimeout(() => {
