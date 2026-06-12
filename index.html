@@ -16,7 +16,7 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #181818 0%, #282828 100%);
             min-height: 100vh;
             padding: 10px;
             padding-bottom: 70px;
@@ -971,12 +971,14 @@
         }
 
         function setupSwipeDetection() {
-            const tabContainer = document.getElementById('tab-container');
-            tabContainer.addEventListener('touchstart', e => {
+            document.addEventListener('touchstart', e => {
                 touchStartX = e.changedTouches[0].screenX;
             }, { passive: true });
-            tabContainer.addEventListener('touchend', e => {
+            document.addEventListener('touchend', e => {
                 touchEndX = e.changedTouches[0].screenX;
+                if (document.querySelector('.modal.active') || document.querySelector('.confirm-modal.active')) {
+                    return;
+                }
                 handleSwipe();
             }, { passive: true });
         }
