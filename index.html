@@ -134,6 +134,10 @@
             background: #dc3545;
             color: white;
         }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
         .counter {
             text-align: center;
             font-size: 18px;
@@ -215,6 +219,21 @@
             justify-content: space-between;
             align-items: center;
             gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .stats-item:active {
+            transform: scale(0.98);
+        }
+        .stats-item.selected {
+            background: #e60012;
+            color: white;
+        }
+        .stats-item.selected .stats-rank,
+        .stats-item.selected .stats-count,
+        .stats-item.selected .stats-probability {
+            background: rgba(255,255,255,0.3);
         }
         .stats-left {
             display: flex;
@@ -264,6 +283,39 @@
             font-size: 13px;
             font-weight: 600;
             white-space: nowrap;
+        }
+        .selection-counter {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e60012;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(230, 0, 18, 0.4);
+            z-index: 100;
+            animation: slideUp 0.3s ease-out;
+        }
+        .selection-counter.complete {
+            background: #28a745;
+            animation: pulse 0.5s ease-in-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
         }
         .driver-inputs {
             margin-bottom: 20px;
@@ -586,6 +638,39 @@
             color: #666;
             white-space: pre-line;
         }
+        .selected-tracks-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .selected-tracks-preview ul {
+            list-style: none;
+            padding: 0;
+        }
+        .selected-tracks-preview li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .selected-tracks-preview .track-num {
+            background: #e60012;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
         @media (max-width: 600px) {
             .header h1 {
                 font-size: 17px;
@@ -616,6 +701,11 @@
                 font-size: 12px;
                 padding: 4px 8px;
             }
+            .selection-counter {
+                bottom: 70px;
+                font-size: 14px;
+                padding: 10px 20px;
+            }
         }
         .info-text {
             text-align: center;
@@ -630,7 +720,7 @@
     <div class="container">
         <div class="header">
             <h1>🏁 Mario Kart Streckenaussucher</h1>
-            <div class="version" onclick="showChangelog()">v1.6</div>
+            <div class="version" onclick="showChangelog()">v1.7.1</div>
         </div>
         <div class="tabs">
             <button class="tab active" onclick="switchTab(0)">Neues Set</button>
@@ -639,7 +729,7 @@
         </div>
         <div class="tab-container" id="tab-container">
             <div class="tab-wrapper" id="tab-wrapper">
-                <div class="tab-content">
+                <div class="tab-content" id="neues-set-content">
                     <div class="button-group">
                         <button class="btn-primary" onclick="generateRaces()">🎲 Neu</button>
                         <button class="btn-secondary" onclick="showResetProbabilitiesConfirm()">🔄 Reset</button>
@@ -688,6 +778,22 @@
         </div>
     </div>
 
+    <!-- Selection Counter (floating) -->
+    <div id="selection-counter" style="display: none;" class="selection-counter"></div>
+
+    <!-- Manual Selection Confirmation Modal -->
+    <div id="manual-selection-modal" class="confirm-modal">
+        <div class="confirm-modal-content">
+            <h3>✅ Strecken als Set übernehmen?</h3>
+            <p>Möchten Sie diese 8 Strecken als neues Set verwenden?</p>
+            <div class="selected-tracks-preview" id="manual-tracks-preview"></div>
+            <div class="modal-buttons">
+                <button class="btn-success" onclick="confirmManualSelection()">Übernehmen</button>
+                <button class="btn-secondary" onclick="cancelManualSelection()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
     <div id="confirm-modal" class="confirm-modal">
         <div class="confirm-modal-content">
             <h3 id="confirm-title">Bestätigung</h3>
@@ -704,12 +810,28 @@
             <h2>📋 Changelog</h2>
             <div id="changelog-content">
                 <div class="changelog-item">
+                    <div class="changelog-version">Version 1.7.1</div>
+                    <ul>
+                        <li>✅ Fix: Manuell hinzugefügte Strecken sofort auswählbar</li>
+                        <li>✅ Fix: Floating Counter (kein Layout-Shift mehr)</li>
+                        <li>✅ Fix: Nach manueller Auswahl scrollt zum Anfang</li>
+                    </ul>
+                </div>
+                <div class="changelog-item">
+                    <div class="changelog-version">Version 1.7</div>
+                    <ul>
+                        <li>✨ NEU: Manuelle Streckenauswahl im Strecken-Tab</li>
+                        <li>Wähle 8 Strecken aus und übernimm sie als Set</li>
+                        <li>Ausgewählte Strecken werden rot markiert</li>
+                        <li>Fortschrittsanzeige während der Auswahl</li>
+                    </ul>
+                </div>
+                <div class="changelog-item">
                     <div class="changelog-version">Version 1.6</div>
                     <ul>
-                        <li>🎯 NEUER ANSATZ: Tippe auf Felder für native Eingabe (prompt)</li>
-                        <li>Quick-Buttons funktionieren weiterhin</li>
+                        <li>Native Eingabe-Dialoge für zuverlässige Tastatur</li>
+                        <li>Quick-Buttons für schnelle Platzierungseingabe</li>
                         <li>100% WebView-kompatibel</li>
-                        <li>Tastatur öffnet sich garantiert!</li>
                     </ul>
                 </div>
             </div>
@@ -786,9 +908,7 @@
             "Eiscreme-Eskapade", "Aurora-Ausblick", "Toads Fabrik", "Wario-Arena",
             "Warios Galeonenwrack", "Dampflok-Gipfel"
         ];
-
         const defaultDrivers = ["Dennis", "Monika", "Volker"];
-
         let appState = {
             tracks: [],
             probabilities: {},
@@ -798,9 +918,9 @@
             driverStats: {},
             raceHistory: [],
             customTracks: [],
-            currentDriverValues: {}
+            currentDriverValues: {},
+            selectedTracks: []
         };
-
         let deleteDriverName = null;
         let deleteRaceId = null;
         let deleteTrackName = null;
@@ -846,6 +966,9 @@
                 tab.classList.toggle('active', i === index);
             });
             document.getElementById('tab-wrapper').style.transform = `translateX(-${index * 33.333}%)`;
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
         }
 
         function setupConfirmModal() {
@@ -864,6 +987,80 @@
 
         function closeConfirmModal() {
             document.getElementById('confirm-modal').classList.remove('active');
+        }
+
+        function toggleTrackSelection(trackName) {
+            const index = appState.selectedTracks.indexOf(trackName);
+            if (index > -1) {
+                appState.selectedTracks.splice(index, 1);
+            } else {
+                if (appState.selectedTracks.length < 8) {
+                    appState.selectedTracks.push(trackName);
+                } else {
+                    return;
+                }
+            }
+            updateStats();
+            updateSelectionCounter();
+            if (appState.selectedTracks.length === 8) {
+                showManualSelectionConfirm();
+            }
+        }
+
+        function updateSelectionCounter() {
+            const counter = document.getElementById('selection-counter');
+            const selectedCount = appState.selectedTracks.length;
+            if (selectedCount > 0) {
+                const isComplete = selectedCount === 8;
+                counter.className = `selection-counter ${isComplete ? 'complete' : ''}`;
+                counter.textContent = `${isComplete ? '✅ ' : ''}Ausgewählt: ${selectedCount}/8`;
+                counter.style.display = 'block';
+            } else {
+                counter.style.display = 'none';
+            }
+        }
+
+        function showManualSelectionConfirm() {
+            const preview = document.getElementById('manual-tracks-preview');
+            preview.innerHTML = '<ul>' +
+                appState.selectedTracks.map((track, i) =>
+                    `<li><span class="track-num">${i+1}</span><span>${track}</span></li>`
+                ).join('') +
+                '</ul>';
+            document.getElementById('manual-selection-modal').classList.add('active');
+        }
+
+        function confirmManualSelection() {
+            const originalProbs = {};
+            appState.selectedTracks.forEach(track => {
+                originalProbs[track] = appState.probabilities[track];
+            });
+            appState.selectedTracks.forEach(track => {
+                appState.probabilities[track] *= 0.5;
+                appState.trackStats[track] = (appState.trackStats[track] || 0) + 1;
+            });
+            const shuffled = [...appState.selectedTracks];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            appState.counter++;
+            appState.selectedTracks = [];
+            saveState();
+            updateDisplay();
+            displayTracks(shuffled, originalProbs);
+            document.getElementById('manual-selection-modal').classList.remove('active');
+            switchTab(0);
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 350);
+        }
+
+        function cancelManualSelection() {
+            appState.selectedTracks = [];
+            document.getElementById('manual-selection-modal').classList.remove('active');
+            updateStats();
+            updateSelectionCounter();
         }
 
         function initializeTracks() {
@@ -914,6 +1111,9 @@
                     if (!appState.currentDriverValues) {
                         appState.currentDriverValues = {};
                     }
+                    if (!appState.selectedTracks) {
+                        appState.selectedTracks = [];
+                    }
                 }
             } catch (e) {
                 console.error('Error loading state:', e);
@@ -941,7 +1141,6 @@
             appState.tracks.forEach(track => {
                 originalProbs[track] = appState.probabilities[track];
             });
-
             while (selectedTracks.length < 8 && availableTracks.length > 0) {
                 const weights = availableTracks.map(track => Math.max(0.001, appState.probabilities[track]));
                 const selectedTrack = weightedRandomSelect(availableTracks, weights);
@@ -950,12 +1149,10 @@
                 appState.probabilities[selectedTrack] *= 0.5;
                 appState.trackStats[selectedTrack] = (appState.trackStats[selectedTrack] || 0) + 1;
             }
-
             for (let i = selectedTracks.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [selectedTracks[i], selectedTracks[j]] = [selectedTracks[j], selectedTracks[i]];
             }
-
             appState.counter++;
             saveState();
             updateDisplay();
@@ -1019,6 +1216,7 @@
             updateDriverStats();
             updateRaceHistory();
             updateAllTracksList();
+            updateSelectionCounter();
         }
 
         function updateAllTracksList() {
@@ -1044,6 +1242,11 @@
                 const li = document.createElement('li');
                 li.className = 'stats-item';
                 const prob = appState.probabilities[track] || 1.0;
+                const isSelected = appState.selectedTracks.includes(track);
+                if (isSelected) {
+                    li.classList.add('selected');
+                }
+                li.onclick = () => toggleTrackSelection(track);
                 li.innerHTML = `
                     <div class="stats-left">
                         <span class="stats-rank">${index + 1}.</span>
