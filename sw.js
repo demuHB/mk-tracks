@@ -1,4 +1,4 @@
-const CACHE = 'mk-tracks-v1';
+const CACHE = 'mk-tracks-v2';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
