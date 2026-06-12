@@ -585,6 +585,13 @@
             border-radius: 8px;
             border: 2px dashed #dc3545;
         }
+        .backup-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            border: 2px dashed #667eea;
+        }
         .checkbox-list {
             max-height: 300px;
             overflow-y: auto;
@@ -720,7 +727,7 @@
     <div class="container">
         <div class="header">
             <h1>🏁 Mario Kart Streckenaussucher</h1>
-            <div class="version" onclick="showChangelog()">v1.7.1</div>
+            <div class="version" onclick="showChangelog()">v1.8</div>
         </div>
         <div class="tabs">
             <button class="tab active" onclick="switchTab(0)">Neues Set</button>
@@ -749,6 +756,17 @@
                     <div class="all-tracks-section">
                         <h3>Alle Strecken im Datensatz</h3>
                         <ul id="all-tracks-list" class="all-tracks-list"></ul>
+                    </div>
+                    <div class="backup-section">
+                        <h3>💾 Daten-Backup</h3>
+                        <p style="margin: 10px 0; color: #666; font-size: 14px;">
+                            Sichert alle Daten (Statistiken, Historie, Strecken, Fahrer) als Datei.
+                        </p>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn-primary" onclick="exportBackup()">📤 Export</button>
+                            <button class="btn-secondary" onclick="triggerImport()">📥 Import</button>
+                        </div>
+                        <input type="file" id="import-file-input" accept=".json,application/json" style="display: none;" onchange="handleImportFile(event)">
                     </div>
                     <div class="reset-track-stats-section">
                         <h3 style="color: #dc3545; margin-bottom: 10px;">⚠️ Gefahrenzone</h3>
@@ -809,6 +827,14 @@
         <div class="modal-content">
             <h2>📋 Changelog</h2>
             <div id="changelog-content">
+                <div class="changelog-item">
+                    <div class="changelog-version">Version 1.8</div>
+                    <ul>
+                        <li>✨ NEU: Daten-Backup als Datei (Export/Import)</li>
+                        <li>Backup wird direkt im Download-Ordner gespeichert</li>
+                        <li>Import per Dateiauswahl – kein Copy&amp;Paste nötig</li>
+                    </ul>
+                </div>
                 <div class="changelog-item">
                     <div class="changelog-version">Version 1.7.1</div>
                     <ul>
@@ -988,6 +1014,65 @@
         function closeConfirmModal() {
             document.getElementById('confirm-modal').classList.remove('active');
         }
+
+        // ===== Backup: Export & Import als Datei =====
+        function exportBackup() {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const filename = `mk-strecken-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}.json`;
+            const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            alert(`✅ Backup wird gespeichert:\n${filename}\n\n(Zu finden im Download-Ordner)`);
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file-input').click();
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                let imported;
+                try {
+                    imported = JSON.parse(e.target.result);
+                } catch (err) {
+                    alert('❌ Ungültige Datei! Das ist kein gültiges Backup.');
+                    return;
+                }
+                if (!imported.drivers || !imported.trackStats) {
+                    alert('❌ Das scheint kein Backup dieser App zu sein.');
+                    return;
+                }
+                showConfirmModal('⚠️ Import bestätigen',
+                    `Backup-Datei: "${file.name}"\n\nAlle aktuellen Daten werden durch das Backup ersetzt. Fortfahren?`,
+                    () => {
+                        appState = imported;
+                        if (!appState.currentDriverValues) appState.currentDriverValues = {};
+                        if (!appState.selectedTracks) appState.selectedTracks = [];
+                        if (!appState.customTracks) appState.customTracks = [];
+                        if (!appState.raceHistory) appState.raceHistory = [];
+                        initializeTracks();
+                        initializeDrivers();
+                        saveState();
+                        updateDisplay();
+                        alert('✅ Backup erfolgreich importiert!');
+                    }
+                );
+            };
+            reader.onerror = () => alert('❌ Fehler beim Lesen der Datei.');
+            reader.readAsText(file);
+        }
+        // ===== Ende Backup =====
 
         function toggleTrackSelection(trackName) {
             const index = appState.selectedTracks.indexOf(trackName);
