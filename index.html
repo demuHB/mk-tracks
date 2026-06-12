@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#e60012">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Mario Kart Streckenaussucher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            padding-bottom: 70px;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #e60012 0%, #ff6b6b 100%);
+            color: white;
+            padding: 20px;
+            padding-right: 70px;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        .version {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 11px;
+            cursor: pointer;
+            opacity: 0.9;
+            padding: 4px 8px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 4px;
+            user-select: none;
+        }
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        .tab.active {
+            background: white;
+            color: #e60012;
+            border-bottom: 3px solid #e60012;
+        }
+        .tab-container {
+            position: relative;
+            overflow: hidden;
+        }
+        .tab-wrapper {
+            display: flex;
+            transition: transform 0.3s ease-out;
+            width: 300%;
+        }
+        .tab-content {
+            width: 33.333%;
+            padding: 20px;
+            flex-shrink: 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background: #e60012;
+            color: white;
+            flex: 1;
+        }
+        .btn-primary:hover, .btn-primary:active {
+            background: #c7000f;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            flex: 1;
+        }
+        .btn-secondary:hover, .btn-secondary:active {
+            background: #5a6268;
+        }
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            flex: none;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .counter {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .tracks-list {
+            list-style: none;
+        }
+        .track-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .track-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+            min-width: 0;
+        }
+        .track-number {
+            background: rgba(255,255,255,0.3);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .track-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .track-probability {
+            background: rgba(255,255,255,0.3);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .stats-list {
+            list-style: none;
+        }
+        .stats-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .stats-item:active {
+            transform: scale(0.98);
+        }
+        .stats-item.selected {
+            background: #e60012;
+            color: white;
+        }
+        .stats-item.selected .stats-rank,
+        .stats-item.selected .stats-count,
+        .stats-item.selected .stats-probability {
+            background: rgba(255,255,255,0.3);
+        }
+        .stats-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        .stats-rank {
+            background: #e60012;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 40px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .stats-track-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .stats-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .stats-count {
+            background: #e60012;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .stats-probability {
+            background: #6c757d;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .selection-counter {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e60012;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(230, 0, 18, 0.4);
+            z-index: 100;
+            animation: slideUp 0.3s ease-out;
+        }
+        .selection-counter.complete {
+            background: #28a745;
+            animation: pulse 0.5s ease-in-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+        }
+        .driver-inputs {
+            margin-bottom: 20px;
+        }
+        .driver-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .driver-label {
+            min-width: 80px;
+            font-weight: 600;
+            font-size: 16px;
+            color: #e60012;
+        }
+        .driver-values {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+        }
+        .value-display {
+            padding: 10px 15px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 70px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .value-display:active {
+            background: #e60012;
+            color: white;
+            border-color: #e60012;
+        }
+        .value-display.empty {
+            color: #999;
+        }
+        .position-quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            width: 100%;
+            max-width: 280px;
+        }
+        .quick-pos-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 4px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .quick-pos-btn:hover, .quick-pos-btn:active {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            flex: 1;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #e60012;
+        }
+        .driver-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .driver-stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .driver-rank-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .driver-rank {
+            background: #e60012;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 16px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .driver-name {
+            color: #e60012;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .stat-box {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #e60012;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h2 {
+            margin-bottom: 15px;
+            color: #e60012;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .changelog-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .changelog-version {
+            font-weight: bold;
+            color: #e60012;
+            margin-bottom: 5px;
+        }
+        .delete-driver-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            user-select: none;
+        }
+        .delete-driver-btn:hover, .delete-driver-btn:active {
+            opacity: 1;
+        }
+        .history-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #e60012;
+        }
+        .history-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            user-select: none;
+        }
+        .history-results {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .history-result-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .add-track-section {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .all-tracks-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .all-tracks-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+        .all-tracks-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-track-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            user-select: none;
+        }
+        .reset-track-stats-section {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff5f5;
+            border-radius: 8px;
+            border: 2px dashed #dc3545;
+        }
+        .checkbox-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        .checkbox-item {
+            padding: 10px;
+            margin-bottom: 5px;
+        }
+        .checkbox-item label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .confirm-modal.active {
+            display: flex;
+        }
+        .confirm-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .confirm-modal-content h3 {
+            color: #e60012;
+            margin-bottom: 15px;
+        }
+        .confirm-modal-content p {
+            margin-bottom: 20px;
+            color: #666;
+            white-space: pre-line;
+        }
+        .selected-tracks-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .selected-tracks-preview ul {
+            list-style: none;
+            padding: 0;
+        }
+        .selected-tracks-preview li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .selected-tracks-preview .track-num {
+            background: #e60012;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 17px;
+            }
+            .tab {
+                font-size: 11px;
+                padding: 12px 5px;
+            }
+            .driver-label {
+                min-width: 60px;
+                font-size: 14px;
+            }
+            .position-quick-buttons {
+                max-width: 100%;
+            }
+            .quick-pos-btn {
+                padding: 6px 2px;
+                font-size: 12px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-count {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+            .stats-probability {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+            .selection-counter {
+                bottom: 70px;
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+        }
+        .info-text {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏁 Mario Kart Streckenaussucher</h1>
+            <div class="version" onclick="showChangelog()">v1.7.1</div>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">Neues Set</button>
+            <button class="tab" onclick="switchTab(1)">Strecken</button>
+            <button class="tab" onclick="switchTab(2)">Fahrer-Ergebnisse</button>
+        </div>
+        <div class="tab-container" id="tab-container">
+            <div class="tab-wrapper" id="tab-wrapper">
+                <div class="tab-content" id="neues-set-content">
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="generateRaces()">🎲 Neu</button>
+                        <button class="btn-secondary" onclick="showResetProbabilitiesConfirm()">🔄 Reset</button>
+                    </div>
+                    <div class="counter">Rennen-Set: <span id="counter">0</span></div>
+                    <ul id="tracks-list" class="tracks-list"></ul>
+                </div>
+                <div class="tab-content">
+                    <ul id="stats-list" class="stats-list"></ul>
+                    <div class="add-track-section">
+                        <h3>Neue Strecke hinzufügen</h3>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <input type="text" id="new-track-input" placeholder="Streckenname eingeben...">
+                            <button class="btn-primary btn-small" onclick="addNewTrack()">➕</button>
+                        </div>
+                    </div>
+                    <div class="all-tracks-section">
+                        <h3>Alle Strecken im Datensatz</h3>
+                        <ul id="all-tracks-list" class="all-tracks-list"></ul>
+                    </div>
+                    <div class="reset-track-stats-section">
+                        <h3 style="color: #dc3545; margin-bottom: 10px;">⚠️ Gefahrenzone</h3>
+                        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                            Setzt alle Strecken-Häufigkeiten auf 0 und Wahrscheinlichkeiten auf 100% zurück.
+                        </p>
+                        <button class="btn-danger" style="width: 100%;" onclick="showResetTrackStatsConfirm()">
+                            Reset Strecken-Statistik
+                        </button>
+                    </div>
+                </div>
+                <div class="tab-content">
+                    <div class="driver-inputs">
+                        <h3>Platzierungen eintragen</h3>
+                        <p class="info-text">💡 Tippe auf Platz/Punkte zum Eingeben oder nutze die Schnellauswahl</p>
+                        <div id="driver-inputs-container"></div>
+                        <button class="btn-primary" style="margin-top: 15px; width: 100%;" onclick="saveRaceResults()">💾 Ergebnisse speichern</button>
+                        <button class="btn-secondary" style="margin-top: 10px; width: 100%;" onclick="showAddDriverModal()">➕ Fahrer hinzufügen</button>
+                    </div>
+                    <h3 style="margin-top: 30px; margin-bottom: 15px;">Statistiken</h3>
+                    <button class="btn-secondary" style="margin-bottom: 15px; width: 100%;" onclick="showResetStatsModal()">Reset Statistik</button>
+                    <div id="driver-stats-container"></div>
+                    <h3 style="margin-top: 30px; margin-bottom: 15px;">Renn-Historie</h3>
+                    <div id="race-history-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Counter (floating) -->
+    <div id="selection-counter" style="display: none;" class="selection-counter"></div>
+
+    <!-- Manual Selection Confirmation Modal -->
+    <div id="manual-selection-modal" class="confirm-modal">
+        <div class="confirm-modal-content">
+            <h3>✅ Strecken als Set übernehmen?</h3>
+            <p>Möchten Sie diese 8 Strecken als neues Set verwenden?</p>
+            <div class="selected-tracks-preview" id="manual-tracks-preview"></div>
+            <div class="modal-buttons">
+                <button class="btn-success" onclick="confirmManualSelection()">Übernehmen</button>
+                <button class="btn-secondary" onclick="cancelManualSelection()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="confirm-modal">
+        <div class="confirm-modal-content">
+            <h3 id="confirm-title">Bestätigung</h3>
+            <p id="confirm-message"></p>
+            <div class="modal-buttons">
+                <button class="btn-primary" id="confirm-yes-btn">Ja</button>
+                <button class="btn-secondary" id="confirm-no-btn">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="changelog-modal" class="modal">
+        <div class="modal-content">
+            <h2>📋 Changelog</h2>
+            <div id="changelog-content">
+                <div class="changelog-item">
+                    <div class="changelog-version">Version 1.7.1</div>
+                    <ul>
+                        <li>✅ Fix: Manuell hinzugefügte Strecken sofort auswählbar</li>
+                        <li>✅ Fix: Floating Counter (kein Layout-Shift mehr)</li>
+                        <li>✅ Fix: Nach manueller Auswahl scrollt zum Anfang</li>
+                    </ul>
+                </div>
+                <div class="changelog-item">
+                    <div class="changelog-version">Version 1.7</div>
+                    <ul>
+                        <li>✨ NEU: Manuelle Streckenauswahl im Strecken-Tab</li>
+                        <li>Wähle 8 Strecken aus und übernimm sie als Set</li>
+                        <li>Ausgewählte Strecken werden rot markiert</li>
+                        <li>Fortschrittsanzeige während der Auswahl</li>
+                    </ul>
+                </div>
+                <div class="changelog-item">
+                    <div class="changelog-version">Version 1.6</div>
+                    <ul>
+                        <li>Native Eingabe-Dialoge für zuverlässige Tastatur</li>
+                        <li>Quick-Buttons für schnelle Platzierungseingabe</li>
+                        <li>100% WebView-kompatibel</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="closeChangelog()">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-driver-modal" class="modal">
+        <div class="modal-content">
+            <h2>Fahrer hinzufügen</h2>
+            <input type="text" id="new-driver-name" placeholder="Name eingeben...">
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="addDriver()">Hinzufügen</button>
+                <button class="btn-secondary" onclick="closeAddDriverModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reset-stats-modal" class="modal">
+        <div class="modal-content">
+            <h2>Statistiken zurücksetzen</h2>
+            <p style="margin-bottom: 15px;">Welche Statistiken möchten Sie zurücksetzen?</p>
+            <div class="checkbox-list" id="reset-drivers-list"></div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="confirmResetStatsFromModal()">Zurücksetzen</button>
+                <button class="btn-secondary" onclick="closeResetStatsModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-driver-modal" class="modal">
+        <div class="modal-content">
+            <h2>Fahrer entfernen</h2>
+            <p id="delete-driver-text"></p>
+            <div class="modal-buttons">
+                <button class="btn-primary" style="background: #dc3545;" onclick="confirmDeleteDriver()">Löschen</button>
+                <button class="btn-secondary" onclick="closeDeleteDriverModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-race-modal" class="modal">
+        <div class="modal-content">
+            <h2>Rennen löschen</h2>
+            <p id="delete-race-text"></p>
+            <div class="modal-buttons">
+                <button class="btn-primary" style="background: #dc3545;" onclick="confirmDeleteRace()">Löschen</button>
+                <button class="btn-secondary" onclick="closeDeleteRaceModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-track-modal" class="modal">
+        <div class="modal-content">
+            <h2>Strecke löschen</h2>
+            <p id="delete-track-text"></p>
+            <div class="modal-buttons">
+                <button class="btn-primary" style="background: #dc3545;" onclick="confirmDeleteTrack()">Löschen</button>
+                <button class="btn-secondary" onclick="closeDeleteTrackModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const initialTracks = [
+            "Baumwipfelpfad", "Fliegende Festung", "Kino Buu Huu", "Bowsers Festung",
+            "Cheep-Cheep-Kaskaden", "Schoko-Sumpf", "Crown City", "Pusteblumen-Grotte",
+            "Glühheiße Wüste", "Dinodino-Dschungel", "DK Alpin", "DK-Startrampe",
+            "Knochentrocken-Vulkan", "Wildtierpark", "?-Block-Ruinen", "Koopa-Strand",
+            "Mario Bros.-Piste", "Marios Piste", "Kuhmuh-Weide", "Peach Beach",
+            "Peach-Stadion", "Rainbow Road", "Salzwasser-Serpentinen", "Shy Guys Basar",
+            "Eiscreme-Eskapade", "Aurora-Ausblick", "Toads Fabrik", "Wario-Arena",
+            "Warios Galeonenwrack", "Dampflok-Gipfel"
+        ];
+        const defaultDrivers = ["Dennis", "Monika", "Volker"];
+        let appState = {
+            tracks: [],
+            probabilities: {},
+            counter: 0,
+            trackStats: {},
+            drivers: [...defaultDrivers],
+            driverStats: {},
+            raceHistory: [],
+            customTracks: [],
+            currentDriverValues: {},
+            selectedTracks: []
+        };
+        let deleteDriverName = null;
+        let deleteRaceId = null;
+        let deleteTrackName = null;
+        let currentTab = 0;
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function initApp() {
+            loadState();
+            initializeTracks();
+            initializeDrivers();
+            updateDisplay();
+            setupConfirmModal();
+            setupSwipeDetection();
+        }
+
+        function setupSwipeDetection() {
+            const tabContainer = document.getElementById('tab-container');
+            tabContainer.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+            tabContainer.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, { passive: true });
+        }
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0 && currentTab < 2) {
+                    switchTab(currentTab + 1);
+                } else if (diff < 0 && currentTab > 0) {
+                    switchTab(currentTab - 1);
+                }
+            }
+        }
+
+        function switchTab(index) {
+            currentTab = index;
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            document.getElementById('tab-wrapper').style.transform = `translateX(-${index * 33.333}%)`;
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        }
+
+        function setupConfirmModal() {
+            document.getElementById('confirm-no-btn').onclick = closeConfirmModal;
+        }
+
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-yes-btn').onclick = () => {
+                closeConfirmModal();
+                onConfirm();
+            };
+            document.getElementById('confirm-modal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('active');
+        }
+
+        function toggleTrackSelection(trackName) {
+            const index = appState.selectedTracks.indexOf(trackName);
+            if (index > -1) {
+                appState.selectedTracks.splice(index, 1);
+            } else {
+                if (appState.selectedTracks.length < 8) {
+                    appState.selectedTracks.push(trackName);
+                } else {
+                    return;
+                }
+            }
+            updateStats();
+            updateSelectionCounter();
+            if (appState.selectedTracks.length === 8) {
+                showManualSelectionConfirm();
+            }
+        }
+
+        function updateSelectionCounter() {
+            const counter = document.getElementById('selection-counter');
+            const selectedCount = appState.selectedTracks.length;
+            if (selectedCount > 0) {
+                const isComplete = selectedCount === 8;
+                counter.className = `selection-counter ${isComplete ? 'complete' : ''}`;
+                counter.textContent = `${isComplete ? '✅ ' : ''}Ausgewählt: ${selectedCount}/8`;
+                counter.style.display = 'block';
+            } else {
+                counter.style.display = 'none';
+            }
+        }
+
+        function showManualSelectionConfirm() {
+            const preview = document.getElementById('manual-tracks-preview');
+            preview.innerHTML = '<ul>' +
+                appState.selectedTracks.map((track, i) =>
+                    `<li><span class="track-num">${i+1}</span><span>${track}</span></li>`
+                ).join('') +
+                '</ul>';
+            document.getElementById('manual-selection-modal').classList.add('active');
+        }
+
+        function confirmManualSelection() {
+            const originalProbs = {};
+            appState.selectedTracks.forEach(track => {
+                originalProbs[track] = appState.probabilities[track];
+            });
+            appState.selectedTracks.forEach(track => {
+                appState.probabilities[track] *= 0.5;
+                appState.trackStats[track] = (appState.trackStats[track] || 0) + 1;
+            });
+            const shuffled = [...appState.selectedTracks];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            appState.counter++;
+            appState.selectedTracks = [];
+            saveState();
+            updateDisplay();
+            displayTracks(shuffled, originalProbs);
+            document.getElementById('manual-selection-modal').classList.remove('active');
+            switchTab(0);
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 350);
+        }
+
+        function cancelManualSelection() {
+            appState.selectedTracks = [];
+            document.getElementById('manual-selection-modal').classList.remove('active');
+            updateStats();
+            updateSelectionCounter();
+        }
+
+        function initializeTracks() {
+            const allTracks = [...initialTracks, ...appState.customTracks];
+            appState.tracks = allTracks;
+            allTracks.forEach(track => {
+                if (!appState.probabilities[track]) appState.probabilities[track] = 1.0;
+                if (!appState.trackStats[track]) appState.trackStats[track] = 0;
+            });
+        }
+
+        function initializeDrivers() {
+            appState.drivers.forEach(driver => {
+                if (!appState.driverStats[driver]) {
+                    appState.driverStats[driver] = {
+                        races: 0, wins: 0, bestPosition: null,
+                        worstPosition: null, positions: [], points: [],
+                        bestPoints: null, worstPoints: null
+                    };
+                }
+                if (!appState.currentDriverValues[driver]) {
+                    appState.currentDriverValues[driver] = { position: '', points: '' };
+                }
+            });
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('mkTracksAppState', JSON.stringify(appState));
+            } catch (e) {
+                console.error('Error saving state:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('mkTracksAppState');
+                if (saved) {
+                    const loaded = JSON.parse(saved);
+                    appState = { ...appState, ...loaded, drivers: loaded.drivers || [...defaultDrivers] };
+                    appState.drivers.forEach(driver => {
+                        if (appState.driverStats[driver] && !appState.driverStats[driver].points) {
+                            appState.driverStats[driver].points = [];
+                            appState.driverStats[driver].bestPoints = null;
+                            appState.driverStats[driver].worstPoints = null;
+                        }
+                    });
+                    if (!appState.currentDriverValues) {
+                        appState.currentDriverValues = {};
+                    }
+                    if (!appState.selectedTracks) {
+                        appState.selectedTracks = [];
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading state:', e);
+            }
+        }
+
+        function formatProbability(prob) {
+            return Math.round(prob * 100) + '%';
+        }
+
+        function weightedRandomSelect(items, weights) {
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+            let random = Math.random() * totalWeight;
+            for (let i = 0; i < items.length; i++) {
+                random -= weights[i];
+                if (random <= 0) return items[i];
+            }
+            return items[items.length - 1];
+        }
+
+        function generateRaces() {
+            const selectedTracks = [];
+            let availableTracks = [...appState.tracks];
+            const originalProbs = {};
+            appState.tracks.forEach(track => {
+                originalProbs[track] = appState.probabilities[track];
+            });
+            while (selectedTracks.length < 8 && availableTracks.length > 0) {
+                const weights = availableTracks.map(track => Math.max(0.001, appState.probabilities[track]));
+                const selectedTrack = weightedRandomSelect(availableTracks, weights);
+                selectedTracks.push(selectedTrack);
+                availableTracks = availableTracks.filter(t => t !== selectedTrack);
+                appState.probabilities[selectedTrack] *= 0.5;
+                appState.trackStats[selectedTrack] = (appState.trackStats[selectedTrack] || 0) + 1;
+            }
+            for (let i = selectedTracks.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [selectedTracks[i], selectedTracks[j]] = [selectedTracks[j], selectedTracks[i]];
+            }
+            appState.counter++;
+            saveState();
+            updateDisplay();
+            displayTracks(selectedTracks, originalProbs);
+        }
+
+        function displayTracks(tracks, originalProbs) {
+            const list = document.getElementById('tracks-list');
+            list.innerHTML = '';
+            tracks.forEach((track, index) => {
+                const li = document.createElement('li');
+                li.className = 'track-item';
+                li.innerHTML = `
+                    <div class="track-left">
+                        <div class="track-number">${index + 1}</div>
+                        <div class="track-name">${track}</div>
+                    </div>
+                    <div class="track-probability">${formatProbability(originalProbs[track])}</div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function showResetProbabilitiesConfirm() {
+            showConfirmModal('🔄 Reset Wahrscheinlichkeiten',
+                'Möchten Sie wirklich alle Wahrscheinlichkeiten und den Rennen-Counter zurücksetzen?',
+                resetProbabilities);
+        }
+
+        function resetProbabilities() {
+            appState.tracks.forEach(track => {
+                appState.probabilities[track] = 1.0;
+            });
+            appState.counter = 0;
+            saveState();
+            updateDisplay();
+            document.getElementById('tracks-list').innerHTML = '';
+        }
+
+        function showResetTrackStatsConfirm() {
+            showConfirmModal('⚠️ Reset Strecken-Statistik',
+                'WARNUNG: Möchten Sie wirklich ALLE Strecken-Statistiken zurücksetzen?\n\nDies setzt:\n• Alle Häufigkeiten auf 0\n• Alle Wahrscheinlichkeiten auf 100%\n• Den Rennen-Counter auf 0\n\nDieser Vorgang kann nicht rückgängig gemacht werden!',
+                resetTrackStats);
+        }
+
+        function resetTrackStats() {
+            appState.tracks.forEach(track => {
+                appState.trackStats[track] = 0;
+                appState.probabilities[track] = 1.0;
+            });
+            appState.counter = 0;
+            saveState();
+            updateDisplay();
+            document.getElementById('tracks-list').innerHTML = '';
+        }
+
+        function updateDisplay() {
+            document.getElementById('counter').textContent = appState.counter;
+            updateStats();
+            updateDriverInputs();
+            updateDriverStats();
+            updateRaceHistory();
+            updateAllTracksList();
+            updateSelectionCounter();
+        }
+
+        function updateAllTracksList() {
+            const list = document.getElementById('all-tracks-list');
+            list.innerHTML = '';
+            appState.tracks.forEach(track => {
+                const li = document.createElement('li');
+                li.className = 'all-tracks-item';
+                const isCustom = appState.customTracks.includes(track);
+                li.innerHTML = `
+                    <span>${track}</span>
+                    ${isCustom ? `<button class="delete-track-btn btn-small" onclick="showDeleteTrackModal('${track}')">❌</button>` : ''}
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function updateStats() {
+            const list = document.getElementById('stats-list');
+            list.innerHTML = '';
+            const sorted = Object.entries(appState.trackStats).sort((a, b) => b[1] - a[1]);
+            sorted.forEach(([track, count], index) => {
+                const li = document.createElement('li');
+                li.className = 'stats-item';
+                const prob = appState.probabilities[track] || 1.0;
+                const isSelected = appState.selectedTracks.includes(track);
+                if (isSelected) {
+                    li.classList.add('selected');
+                }
+                li.onclick = () => toggleTrackSelection(track);
+                li.innerHTML = `
+                    <div class="stats-left">
+                        <span class="stats-rank">${index + 1}.</span>
+                        <span class="stats-track-name">${track}</span>
+                    </div>
+                    <div class="stats-right">
+                        <span class="stats-probability">${formatProbability(prob)}</span>
+                        <span class="stats-count">${count}x</span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+            if (sorted.length === 0 || sorted.every(([, count]) => count === 0)) {
+                list.innerHTML = '<li class="stats-item"><span>Noch keine Rennen gespielt</span></li>';
+            }
+        }
+
+        function promptForValue(driver, type) {
+            const currentValue = appState.currentDriverValues[driver][type];
+            const label = type === 'position' ? 'Platzierung (1-24)' : 'Punkte (0-120)';
+            const max = type === 'position' ? 24 : 120;
+            const min = type === 'position' ? 1 : 0;
+            const value = prompt(`${driver} - ${label}:`, currentValue || '');
+            if (value !== null) {
+                const num = parseInt(value);
+                if (value === '' || (num >= min && num <= max)) {
+                    appState.currentDriverValues[driver][type] = value;
+                    updateDriverInputsDisplay();
+                } else {
+                    alert(`Bitte eine Zahl zwischen ${min} und ${max} eingeben!`);
+                }
+            }
+        }
+
+        function setQuickPosition(driver, position) {
+            appState.currentDriverValues[driver].position = position.toString();
+            updateDriverInputsDisplay();
+        }
+
+        function updateDriverInputs() {
+            const container = document.getElementById('driver-inputs-container');
+            container.innerHTML = '';
+            appState.drivers.forEach(driver => {
+                const row = document.createElement('div');
+                row.className = 'driver-row';
+                row.innerHTML = `
+                    <div class="driver-label">${getDriverDisplayName(driver)}</div>
+                    <div class="driver-values">
+                        <div class="value-display ${!appState.currentDriverValues[driver]?.position ? 'empty' : ''}"
+                             onclick="promptForValue('${driver}', 'position')">
+                            ${appState.currentDriverValues[driver]?.position || 'Platz'}
+                        </div>
+                        <div class="value-display ${!appState.currentDriverValues[driver]?.points ? 'empty' : ''}"
+                             onclick="promptForValue('${driver}', 'points')">
+                            ${appState.currentDriverValues[driver]?.points || 'Punkte'}
+                        </div>
+                    </div>
+                    <div class="position-quick-buttons">
+                        ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i =>
+                            `<button class="quick-pos-btn" onclick="setQuickPosition('${driver}', ${i})">${i}</button>`
+                        ).join('')}
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function updateDriverInputsDisplay() {
+            updateDriverInputs();
+        }
+
+        function getDriverDisplayName(name) {
+            if (window.innerWidth < 600 && name.length > 8) {
+                return name.substring(0, 2).toUpperCase();
+            }
+            return name;
+        }
+
+        function getDriverRankings() {
+            return appState.drivers.map(driver => {
+                const stats = appState.driverStats[driver];
+                const avgPos = stats.positions.length > 0
+                    ? stats.positions.reduce((a, b) => a + b, 0) / stats.positions.length
+                    : 999;
+                return { name: driver, wins: stats.wins, avgPosition: avgPos };
+            }).sort((a, b) => {
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return a.avgPosition - b.avgPosition;
+            });
+        }
+
+        function saveRaceResults() {
+            const results = {};
+            let hasAnyResult = false;
+            appState.drivers.forEach(driver => {
+                const posValue = appState.currentDriverValues[driver]?.position;
+                const pointsValue = appState.currentDriverValues[driver]?.points;
+                if (posValue) {
+                    const position = parseInt(posValue);
+                    const points = pointsValue ? parseInt(pointsValue) : null;
+                    if (position >= 1 && position <= 24) {
+                        results[driver] = { position, points };
+                        hasAnyResult = true;
+                    }
+                }
+            });
+            if (!hasAnyResult) {
+                alert('Bitte mindestens eine Platzierung eingeben!');
+                return;
+            }
+            Object.entries(results).forEach(([driver, data]) => {
+                const stats = appState.driverStats[driver];
+                stats.races++;
+                stats.positions.push(data.position);
+                if (data.position === 1) stats.wins++;
+                if (stats.bestPosition === null || data.position < stats.bestPosition) {
+                    stats.bestPosition = data.position;
+                }
+                if (stats.worstPosition === null || data.position > stats.worstPosition) {
+                    stats.worstPosition = data.position;
+                }
+                if (data.points !== null) {
+                    stats.points.push(data.points);
+                    if (stats.bestPoints === null || data.points > stats.bestPoints) {
+                        stats.bestPoints = data.points;
+                    }
+                    if (stats.worstPoints === null || data.points < stats.worstPoints) {
+                        stats.worstPoints = data.points;
+                    }
+                }
+            });
+            const raceEntry = {
+                id: Date.now(),
+                timestamp: new Date().toLocaleString('de-DE', {
+                    weekday: 'short', year: 'numeric', month: 'short',
+                    day: 'numeric', hour: '2-digit', minute: '2-digit'
+                }),
+                results
+            };
+            appState.raceHistory.unshift(raceEntry);
+            appState.drivers.forEach(driver => {
+                appState.currentDriverValues[driver] = { position: '', points: '' };
+            });
+            saveState();
+            updateDisplay();
+        }
+
+        function updateDriverStats() {
+            const container = document.getElementById('driver-stats-container');
+            container.innerHTML = '';
+            const rankings = getDriverRankings();
+            rankings.forEach((ranking, index) => {
+                const driver = ranking.name;
+                const stats = appState.driverStats[driver];
+                const avgPos = stats.positions.length > 0
+                    ? (stats.positions.reduce((a, b) => a + b, 0) / stats.positions.length).toFixed(2) : '-';
+                const avgPoints = stats.points.length > 0
+                    ? (stats.points.reduce((a, b) => a + b, 0) / stats.points.length).toFixed(1) : '-';
+                const div = document.createElement('div');
+                div.className = 'driver-stats';
+                let deleteButton = '';
+                if (!defaultDrivers.includes(driver)) {
+                    deleteButton = `<button class="delete-driver-btn" onclick="showDeleteDriverModal('${driver}')">×</button>`;
+                }
+                div.innerHTML = `
+                    <div class="driver-stats-header">
+                        <div class="driver-rank-name">
+                            <span class="driver-rank">${index + 1}.</span>
+                            <span class="driver-name">${driver}</span>
+                        </div>
+                        ${deleteButton}
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box"><div class="stat-label">Rennen</div><div class="stat-value">${stats.races}</div></div>
+                        <div class="stat-box"><div class="stat-label">Siege</div><div class="stat-value">${stats.wins}</div></div>
+                        <div class="stat-box"><div class="stat-label">Beste Platz.</div><div class="stat-value">${stats.bestPosition || '-'}</div></div>
+                        <div class="stat-box"><div class="stat-label">Schlechteste</div><div class="stat-value">${stats.worstPosition || '-'}</div></div>
+                        <div class="stat-box"><div class="stat-label">Ø Platzierung</div><div class="stat-value">${avgPos}</div></div>
+                        <div class="stat-box"><div class="stat-label">Höchste Pkt.</div><div class="stat-value">${stats.bestPoints !== null ? stats.bestPoints : '-'}</div></div>
+                        <div class="stat-box"><div class="stat-label">Niedrigste Pkt.</div><div class="stat-value">${stats.worstPoints !== null ? stats.worstPoints : '-'}</div></div>
+                        <div class="stat-box"><div class="stat-label">Ø Punkte</div><div class="stat-value">${avgPoints}</div></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateRaceHistory() {
+            const container = document.getElementById('race-history-container');
+            container.innerHTML = '';
+            if (appState.raceHistory.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">Noch keine Rennen in der Historie</p>';
+                return;
+            }
+            appState.raceHistory.forEach(race => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                let resultsHTML = '';
+                Object.entries(race.results).forEach(([driver, data]) => {
+                    const position = data.position || data;
+                    const points = data.points !== undefined ? data.points : '';
+                    resultsHTML += `
+                        <div class="history-result-row">
+                            <div class="driver-label">${driver}:</div>
+                            <div class="value-display" onclick="promptEditRaceResult(${race.id}, '${driver}', 'position')">${position}</div>
+                            <div class="value-display ${!points ? 'empty' : ''}" onclick="promptEditRaceResult(${race.id}, '${driver}', 'points')">${points || 'Punkte'}</div>
+                        </div>
+                    `;
+                });
+                div.innerHTML = `
+                    <div class="history-header">
+                        <span>${race.timestamp}</span>
+                        <button class="history-delete" onclick="showDeleteRaceModal(${race.id})">🗑️</button>
+                    </div>
+                    <div class="history-results">${resultsHTML}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function promptEditRaceResult(raceId, driver, type) {
+            const race = appState.raceHistory.find(r => r.id === raceId);
+            if (!race) return;
+            const data = race.results[driver];
+            const currentValue = type === 'position' ? (data.position || data) : (data.points || '');
+            const label = type === 'position' ? 'Platzierung (1-24)' : 'Punkte (0-120)';
+            const max = type === 'position' ? 24 : 120;
+            const min = type === 'position' ? 1 : 0;
+            const value = prompt(`${driver} - ${label}:`, currentValue);
+            if (value !== null) {
+                if (value === '') {
+                    updateRaceResult(raceId, driver, type, null);
+                } else {
+                    const num = parseInt(value);
+                    if (num >= min && num <= max) {
+                        updateRaceResult(raceId, driver, type, num);
+                    } else {
+                        alert(`Bitte eine Zahl zwischen ${min} und ${max} eingeben!`);
+                    }
+                }
+            }
+        }
+
+        function updateRaceResult(raceId, driver, field, value) {
+            const race = appState.raceHistory.find(r => r.id === raceId);
+            if (!race) return;
+            if (field === 'position') {
+                if (typeof race.results[driver] === 'object') {
+                    race.results[driver].position = value;
+                } else {
+                    race.results[driver] = { position: value, points: null };
+                }
+            } else if (field === 'points') {
+                if (typeof race.results[driver] === 'object') {
+                    race.results[driver].points = value;
+                } else {
+                    race.results[driver] = { position: race.results[driver], points: value };
+                }
+            }
+            recalculateAllDriverStats();
+            saveState();
+            updateDriverStats();
+            updateRaceHistory();
+        }
+
+        function recalculateAllDriverStats() {
+            appState.drivers.forEach(driver => {
+                appState.driverStats[driver] = {
+                    races: 0, wins: 0, bestPosition: null, worstPosition: null,
+                    positions: [], points: [], bestPoints: null, worstPoints: null
+                };
+            });
+            appState.raceHistory.forEach(race => {
+                Object.entries(race.results).forEach(([driver, data]) => {
+                    if (!appState.driverStats[driver]) {
+                        appState.driverStats[driver] = {
+                            races: 0, wins: 0, bestPosition: null, worstPosition: null,
+                            positions: [], points: [], bestPoints: null, worstPoints: null
+                        };
+                    }
+                    const position = data.position || data;
+                    const points = data.points;
+                    const stats = appState.driverStats[driver];
+                    stats.races++;
+                    stats.positions.push(position);
+                    if (position === 1) stats.wins++;
+                    if (stats.bestPosition === null || position < stats.bestPosition) stats.bestPosition = position;
+                    if (stats.worstPosition === null || position > stats.worstPosition) stats.worstPosition = position;
+                    if (points !== null && points !== undefined) {
+                        stats.points.push(points);
+                        if (stats.bestPoints === null || points > stats.bestPoints) stats.bestPoints = points;
+                        if (stats.worstPoints === null || points < stats.worstPoints) stats.worstPoints = points;
+                    }
+                });
+            });
+        }
+
+        function showAddDriverModal() {
+            document.getElementById('add-driver-modal').classList.add('active');
+            document.getElementById('new-driver-name').value = '';
+            setTimeout(() => document.getElementById('new-driver-name').focus(), 100);
+        }
+
+        function closeAddDriverModal() {
+            document.getElementById('add-driver-modal').classList.remove('active');
+        }
+
+        function addDriver() {
+            const name = document.getElementById('new-driver-name').value.trim();
+            if (!name) {
+                alert('Bitte einen Namen eingeben!');
+                return;
+            }
+            if (appState.drivers.includes(name)) {
+                alert('Dieser Fahrer existiert bereits!');
+                return;
+            }
+            appState.drivers.push(name);
+            appState.driverStats[name] = {
+                races: 0, wins: 0, bestPosition: null, worstPosition: null,
+                positions: [], points: [], bestPoints: null, worstPoints: null
+            };
+            appState.currentDriverValues[name] = { position: '', points: '' };
+            saveState();
+            updateDisplay();
+            closeAddDriverModal();
+        }
+
+        function showDeleteDriverModal(driverName) {
+            deleteDriverName = driverName;
+            document.getElementById('delete-driver-text').textContent =
+                `Möchten Sie den Fahrer "${driverName}" wirklich entfernen? Alle Statistiken und Historieneinträge werden gelöscht.`;
+            document.getElementById('delete-driver-modal').classList.add('active');
+        }
+
+        function closeDeleteDriverModal() {
+            document.getElementById('delete-driver-modal').classList.remove('active');
+            deleteDriverName = null;
+        }
+
+        function confirmDeleteDriver() {
+            if (!deleteDriverName) return;
+            appState.drivers = appState.drivers.filter(d => d !== deleteDriverName);
+            delete appState.driverStats[deleteDriverName];
+            delete appState.currentDriverValues[deleteDriverName];
+            appState.raceHistory.forEach(race => delete race.results[deleteDriverName]);
+            saveState();
+            updateDisplay();
+            closeDeleteDriverModal();
+        }
+
+        function showDeleteRaceModal(raceId) {
+            deleteRaceId = raceId;
+            const race = appState.raceHistory.find(r => r.id === raceId);
+            document.getElementById('delete-race-text').textContent =
+                `Möchten Sie das Rennen vom ${race.timestamp} wirklich löschen? Die Statistiken werden neu berechnet.`;
+            document.getElementById('delete-race-modal').classList.add('active');
+        }
+
+        function closeDeleteRaceModal() {
+            document.getElementById('delete-race-modal').classList.remove('active');
+            deleteRaceId = null;
+        }
+
+        function confirmDeleteRace() {
+            if (!deleteRaceId) return;
+            appState.raceHistory = appState.raceHistory.filter(r => r.id !== deleteRaceId);
+            recalculateAllDriverStats();
+            saveState();
+            updateDisplay();
+            closeDeleteRaceModal();
+        }
+
+        function showDeleteTrackModal(trackName) {
+            deleteTrackName = trackName;
+            document.getElementById('delete-track-text').textContent =
+                `Möchten Sie die Strecke "${trackName}" wirklich aus dem Datensatz entfernen?`;
+            document.getElementById('delete-track-modal').classList.add('active');
+        }
+
+        function closeDeleteTrackModal() {
+            document.getElementById('delete-track-modal').classList.remove('active');
+            deleteTrackName = null;
+        }
+
+        function confirmDeleteTrack() {
+            if (!deleteTrackName) return;
+            appState.customTracks = appState.customTracks.filter(t => t !== deleteTrackName);
+            appState.tracks = appState.tracks.filter(t => t !== deleteTrackName);
+            delete appState.probabilities[deleteTrackName];
+            delete appState.trackStats[deleteTrackName];
+            saveState();
+            updateDisplay();
+            closeDeleteTrackModal();
+        }
+
+        function showResetStatsModal() {
+            document.getElementById('reset-drivers-list').innerHTML = '';
+            const allDiv = document.createElement('div');
+            allDiv.className = 'checkbox-item';
+            allDiv.innerHTML = `
+                <label>
+                    <input type="checkbox" id="reset-all" onchange="toggleAllDrivers(this.checked)">
+                    <strong>Alle Fahrer</strong>
+                </label>
+            `;
+            document.getElementById('reset-drivers-list').appendChild(allDiv);
+            appState.drivers.forEach(driver => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <label>
+                        <input type="checkbox" class="reset-driver-checkbox" value="${driver}">
+                        ${driver}
+                    </label>
+                `;
+                document.getElementById('reset-drivers-list').appendChild(div);
+            });
+            document.getElementById('reset-stats-modal').classList.add('active');
+        }
+
+        function toggleAllDrivers(checked) {
+            document.querySelectorAll('.reset-driver-checkbox').forEach(cb => cb.checked = checked);
+        }
+
+        function closeResetStatsModal() {
+            document.getElementById('reset-stats-modal').classList.remove('active');
+        }
+
+        function confirmResetStatsFromModal() {
+            const checkboxes = document.querySelectorAll('.reset-driver-checkbox:checked');
+            const driversToReset = Array.from(checkboxes).map(cb => cb.value);
+            if (driversToReset.length === 0) {
+                alert('Bitte mindestens einen Fahrer auswählen!');
+                return;
+            }
+            closeResetStatsModal();
+            const driverNames = driversToReset.join(', ');
+            showConfirmModal('⚠️ Statistiken zurücksetzen',
+                `Möchten Sie wirklich die Statistiken für folgende Fahrer zurücksetzen?\n\n${driverNames}\n\nAlle Rennen und Statistiken dieser Fahrer werden gelöscht!`,
+                () => {
+                    driversToReset.forEach(driver => {
+                        appState.driverStats[driver] = {
+                            races: 0, wins: 0, bestPosition: null, worstPosition: null,
+                            positions: [], points: [], bestPoints: null, worstPoints: null
+                        };
+                        appState.raceHistory.forEach(race => delete race.results[driver]);
+                    });
+                    appState.raceHistory = appState.raceHistory.filter(race =>
+                        Object.keys(race.results).length > 0
+                    );
+                    saveState();
+                    updateDisplay();
+                }
+            );
+        }
+
+        function addNewTrack() {
+            const input = document.getElementById('new-track-input');
+            const trackName = input.value.trim();
+            if (!trackName) {
+                alert('Bitte einen Streckennamen eingeben!');
+                return;
+            }
+            if (appState.tracks.includes(trackName)) {
+                alert('Diese Strecke existiert bereits!');
+                return;
+            }
+            appState.customTracks.push(trackName);
+            appState.tracks.push(trackName);
+            appState.probabilities[trackName] = 1.0;
+            appState.trackStats[trackName] = 0;
+            input.value = '';
+            saveState();
+            updateDisplay();
+            alert(`Strecke "${trackName}" wurde hinzugefügt!`);
+        }
+
+        function showChangelog() {
+            document.getElementById('changelog-modal').classList.add('active');
+        }
+
+        function closeChangelog() {
+            document.getElementById('changelog-modal').classList.remove('active');
+        }
+
+        window.addEventListener('load', initApp);
+        window.addEventListener('resize', updateDriverInputs);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
