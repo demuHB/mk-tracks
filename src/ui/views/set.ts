@@ -1,4 +1,4 @@
-import { formatProbability, generateSet, resetProbabilities } from '../../domain/tracks';
+import { formatProbability, generateSet, isSetUndoable, resetProbabilities } from '../../domain/tracks';
 import type { AppState } from '../../state/schema';
 import { update } from '../../state/store';
 import { confirmDialog, toast } from '../components/dialogs';
@@ -7,9 +7,11 @@ import { navigate } from '../nav';
 
 export function renderSet(state: AppState): HTMLElement {
   const set = state.currentSet;
+  const undoable = isSetUndoable(state);
 
   const onGenerate = () => {
     update((s) => generateSet(s));
+    if (undoable) toast('Vorheriges Set ersetzt – es wird nicht mitgezählt');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -58,6 +60,14 @@ export function renderSet(state: AppState): HTMLElement {
               }),
             ),
           ),
+          set.setNumber !== undefined &&
+            h(
+              'p',
+              { class: ['set-status', undoable ? 'is-open' : 'is-played'] },
+              undoable
+                ? 'Noch nicht gespielt – neu würfeln ersetzt dieses Set, ohne es mitzuzählen.'
+                : 'Gespielt – zählt in der Strecken-Statistik.',
+            ),
           h(
             'ol',
             { class: 'set-list' },

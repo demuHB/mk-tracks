@@ -1178,3 +1178,15 @@ input[type='text']:focus {
     animation: none;
   }
 }
+
+.set-status {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: -4px;
+}
+
+.set-status.is-played::before {
+  content: '✓ ';
+  color: var(--good);
+  font-weight: 700;
+}
