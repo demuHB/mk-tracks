@@ -21,8 +21,51 @@ export function shuffle<T>(items: T[], random: RandomFn = Math.random): T[] {
   return a;
 }
 
+/**
+ * Ein Set darf rückgängig gemacht werden, solange dafür kein Ergebnis gespeichert wurde und seitdem
+ * kein anderes Set gelost wurde (auch nicht in der alten Version, die `counter` ebenfalls erhöht).
+ */
+export function isSetUndoable(state: AppState): boolean {
+  const set = state.currentSet;
+  if (!set || set.played || set.setNumber === undefined) return false;
+  if (state.counter !== set.setNumber) return false;
+  const created = Date.parse(set.createdAt);
+  // Ergebnisse aus der alten Version kennen das Set nicht – jedes neuere Rennen zählt als gespielt.
+  return !state.raceHistory.some((r) => r.id >= created);
+}
+
+/** Nimmt Zählung, Wahrscheinlichkeiten und Set-Zähler des aktuellen, ungespielten Sets zurück. */
+export function undoCurrentSet(state: AppState): boolean {
+  if (!isSetUndoable(state)) return false;
+  const set = state.currentSet!;
+  for (const t of set.tracks) {
+    if (!state.tracks.includes(t)) continue;
+    state.probabilities[t] = set.probabilities[t] ?? 1;
+    state.trackStats[t] = Math.max(0, (state.trackStats[t] ?? 0) - 1);
+  }
+  state.counter = Math.max(0, state.counter - 1);
+  state.currentSet = null;
+  return true;
+}
+
+export function isRevealed(set: CurrentSet, index: number): boolean {
+  return !set.revealed || set.revealed.includes(index);
+}
+
+/** Deckt eine Strecke des aktuellen Sets auf. */
+export function revealTrack(state: AppState, index: number): void {
+  const set = state.currentSet;
+  if (!set?.revealed || index < 0 || index >= set.tracks.length) return;
+  if (!set.revealed.includes(index)) set.revealed.push(index);
+}
+
+/** Markiert das aktuelle Set als gespielt (nach dem Speichern eines Ergebnisses). */
+export function markSetPlayed(state: AppState): void {
+  if (state.currentSet) state.currentSet.played = true;
+}
+
 /** Übernimmt ein Set: Wahrscheinlichkeit halbieren, Häufigkeit zählen, Set-Zähler erhöhen. */
-function applySet(state: AppState, tracks: string[], random: RandomFn): CurrentSet {
+function applySet(state: AppState, tracks: string[], random: RandomFn, revealAll: boolean): CurrentSet {
   const before: Record<string, number> = {};
   for (const t of tracks) before[t] = state.probabilities[t] ?? 1;
   for (const t of tracks) {
@@ -34,6 +77,9 @@ function applySet(state: AppState, tracks: string[], random: RandomFn): CurrentS
     tracks: shuffle(tracks, random),
     probabilities: before,
     createdAt: new Date().toISOString(),
+    setNumber: state.counter,
+    // Gewürfelte Sets werden Strecke für Strecke aufgedeckt, nur die erste ist sofort sichtbar.
+    revealed: revealAll ? tracks.map((_, i) => i) : [0],
   };
   state.currentSet = set;
   return set;
@@ -41,6 +87,7 @@ function applySet(state: AppState, tracks: string[], random: RandomFn): CurrentS
 
 /** Lost 8 verschiedene Strecken gewichtet nach Wahrscheinlichkeit aus (wie generateRaces() in v1.8). */
 export function generateSet(state: AppState, random: RandomFn = Math.random): CurrentSet {
+  undoCurrentSet(state);
   const picked: string[] = [];
   let available = [...state.tracks];
   while (picked.length < SET_SIZE && available.length > 0) {
@@ -49,12 +96,13 @@ export function generateSet(state: AppState, random: RandomFn = Math.random): Cu
     picked.push(track);
     available = available.filter((t) => t !== track);
   }
-  return applySet(state, picked, random);
+  return applySet(state, picked, random, false);
 }
 
 /** Übernimmt die manuell gewählten Strecken als Set. */
 export function applyManualSelection(state: AppState, random: RandomFn = Math.random): CurrentSet {
-  const set = applySet(state, [...state.selectedTracks], random);
+  undoCurrentSet(state);
+  const set = applySet(state, [...state.selectedTracks], random, true);
   state.selectedTracks = [];
   return set;
 }

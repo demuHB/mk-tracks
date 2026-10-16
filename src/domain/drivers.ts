@@ -8,6 +8,7 @@ import {
   type RaceResult,
 } from '../state/schema';
 import { formatRaceTimestamp, toResult } from './races';
+import { markSetPlayed } from './tracks';
 
 export function isValidPosition(n: number): boolean {
   return Number.isInteger(n) && n >= MIN_POSITION && n <= MAX_POSITION;
@@ -35,6 +36,7 @@ export function saveRaceFromDrafts(state: AppState, now: Date = new Date()): Rac
     ts: now.toISOString(),
   };
   state.raceHistory.unshift(race);
+  markSetPlayed(state);
   for (const driver of state.drivers) state.currentDriverValues[driver] = { position: '', points: '' };
   return race;
 }

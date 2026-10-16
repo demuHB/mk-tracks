@@ -44,6 +44,12 @@ export interface CurrentSet {
   /** Wahrscheinlichkeit jeder Strecke vor der Auslosung. */
   probabilities: Record<string, number>;
   createdAt: string;
+  /** Stand von `counter` direkt nach dem Auslosen. Fehlt bei Sets vor dieser Version. */
+  setNumber?: number;
+  /** true, sobald für dieses Set ein Ergebnis gespeichert wurde. */
+  played?: boolean;
+  /** Indizes der bereits aufgedeckten Strecken. Fehlt = alle aufgedeckt (ältere Sets). */
+  revealed?: number[];
 }
 
 export type ThemeSetting = 'system' | 'dark' | 'light';
