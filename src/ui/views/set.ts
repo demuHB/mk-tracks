@@ -1,13 +1,88 @@
-import { formatProbability, generateSet, isSetUndoable, resetProbabilities } from '../../domain/tracks';
-import type { AppState } from '../../state/schema';
+import {
+  formatProbability,
+  generateSet,
+  isRevealed,
+  isSetUndoable,
+  resetProbabilities,
+  revealTrack,
+} from '../../domain/tracks';
+import type { AppState, CurrentSet } from '../../state/schema';
 import { update } from '../../state/store';
+import { afterMount } from '../charts';
 import { confirmDialog, toast } from '../components/dialogs';
 import { h, icon } from '../dom';
 import { navigate } from '../nav';
 
+/** Set, dessen Einblend-Animation schon lief (sonst würde sie bei jedem Neu-Rendern wiederholt). */
+let introducedSet: string | null = null;
+/** Strecke, die gerade aufgedeckt wird und beim nächsten Rendern umdreht. */
+let flipping: number | null = null;
+
+function trackFace(set: CurrentSet, track: string, i: number, extraClass?: string): HTMLElement {
+  return h(
+    'div',
+    { class: ['flip-face face-shown', extraClass] },
+    h('span', { class: 'set-num' }, String(i + 1)),
+    h('span', { class: 'set-name' }, track),
+    h(
+      'span',
+      { class: 'chip', title: 'Wahrscheinlichkeit vor der Auslosung' },
+      formatProbability(set.probabilities[track] ?? 1),
+    ),
+  );
+}
+
+function hiddenFace(i: number): HTMLElement {
+  return h(
+    'div',
+    { class: 'flip-face face-hidden' },
+    h('span', { class: 'set-num' }, String(i + 1)),
+    h('span', { class: 'hidden-hint' }, 'Antippen zum Aufdecken'),
+    h('span', { class: 'hidden-mark', 'aria-hidden': 'true' }, '?'),
+  );
+}
+
+function setItem(set: CurrentSet, track: string, i: number, isNew: boolean): HTMLElement {
+  const itemProps = { class: ['set-item', isNew && 'is-new'], style: { animationDelay: `${i * 40}ms` } };
+
+  if (i === flipping) {
+    // Beide Seiten rendern und nach dem Einhängen umdrehen.
+    const back = hiddenFace(i);
+    back.setAttribute('aria-hidden', 'true');
+    const inner = h('div', { class: 'flip-inner' }, back, trackFace(set, track, i, 'is-back'));
+    afterMount(() => requestAnimationFrame(() => inner.classList.add('is-flipped')));
+    return h('li', itemProps, h('div', { class: 'flip-card' }, inner));
+  }
+
+  if (!isRevealed(set, i)) {
+    return h(
+      'li',
+      itemProps,
+      h(
+        'button',
+        {
+          class: 'flip-card',
+          'aria-label': `Strecke ${i + 1} aufdecken`,
+          onclick: () => {
+            flipping = i;
+            update((s) => revealTrack(s, i));
+          },
+        },
+        h('div', { class: 'flip-inner' }, hiddenFace(i)),
+      ),
+    );
+  }
+
+  return h('li', itemProps, trackFace(set, track, i));
+}
+
 export function renderSet(state: AppState): HTMLElement {
   const set = state.currentSet;
   const undoable = isSetUndoable(state);
+  const isNewSet = !!set && set.createdAt !== introducedSet;
+  if (set) introducedSet = set.createdAt;
+  // Nur für genau dieses Rendern umdrehen
+  queueMicrotask(() => (flipping = null));
 
   const onGenerate = () => {
     update((s) => generateSet(s));
@@ -71,19 +146,7 @@ export function renderSet(state: AppState): HTMLElement {
           h(
             'ol',
             { class: 'set-list' },
-            set.tracks.map((track, i) =>
-              h(
-                'li',
-                { class: 'set-item', style: { animationDelay: `${i * 40}ms` } },
-                h('span', { class: 'set-num' }, String(i + 1)),
-                h('span', { class: 'set-name' }, track),
-                h(
-                  'span',
-                  { class: 'chip', title: 'Wahrscheinlichkeit vor der Auslosung' },
-                  formatProbability(set.probabilities[track] ?? 1),
-                ),
-              ),
-            ),
+            set.tracks.map((track, i) => setItem(set, track, i, isNewSet)),
           ),
           h(
             'button',

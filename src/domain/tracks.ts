@@ -48,13 +48,24 @@ export function undoCurrentSet(state: AppState): boolean {
   return true;
 }
 
+export function isRevealed(set: CurrentSet, index: number): boolean {
+  return !set.revealed || set.revealed.includes(index);
+}
+
+/** Deckt eine Strecke des aktuellen Sets auf. */
+export function revealTrack(state: AppState, index: number): void {
+  const set = state.currentSet;
+  if (!set?.revealed || index < 0 || index >= set.tracks.length) return;
+  if (!set.revealed.includes(index)) set.revealed.push(index);
+}
+
 /** Markiert das aktuelle Set als gespielt (nach dem Speichern eines Ergebnisses). */
 export function markSetPlayed(state: AppState): void {
   if (state.currentSet) state.currentSet.played = true;
 }
 
 /** Übernimmt ein Set: Wahrscheinlichkeit halbieren, Häufigkeit zählen, Set-Zähler erhöhen. */
-function applySet(state: AppState, tracks: string[], random: RandomFn): CurrentSet {
+function applySet(state: AppState, tracks: string[], random: RandomFn, revealAll: boolean): CurrentSet {
   const before: Record<string, number> = {};
   for (const t of tracks) before[t] = state.probabilities[t] ?? 1;
   for (const t of tracks) {
@@ -67,6 +78,8 @@ function applySet(state: AppState, tracks: string[], random: RandomFn): CurrentS
     probabilities: before,
     createdAt: new Date().toISOString(),
     setNumber: state.counter,
+    // Gewürfelte Sets werden Strecke für Strecke aufgedeckt, nur die erste ist sofort sichtbar.
+    revealed: revealAll ? tracks.map((_, i) => i) : [0],
   };
   state.currentSet = set;
   return set;
@@ -83,13 +96,13 @@ export function generateSet(state: AppState, random: RandomFn = Math.random): Cu
     picked.push(track);
     available = available.filter((t) => t !== track);
   }
-  return applySet(state, picked, random);
+  return applySet(state, picked, random, false);
 }
 
 /** Übernimmt die manuell gewählten Strecken als Set. */
 export function applyManualSelection(state: AppState, random: RandomFn = Math.random): CurrentSet {
   undoCurrentSet(state);
-  const set = applySet(state, [...state.selectedTracks], random);
+  const set = applySet(state, [...state.selectedTracks], random, true);
   state.selectedTracks = [];
   return set;
 }

@@ -457,14 +457,79 @@ input[type='text']:focus {
   gap: 6px;
 }
 
-.set-item {
+.set-item.is-new {
+  animation: slide-in 0.3s ease-out both;
+}
+
+/* Karten: Vorderseite = Umriss, Rückseite = Strecke */
+.flip-card {
+  display: block;
+  width: 100%;
+  perspective: 900px;
+  text-align: left;
+}
+
+.flip-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.25, 1.15);
+}
+
+.flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  grid-area: 1 / 1;
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 50px;
   padding: 10px 12px;
   border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.face-shown {
   background: var(--surface-2);
-  animation: slide-in 0.3s ease-out both;
+}
+
+.face-shown.is-back {
+  transform: rotateY(180deg);
+}
+
+.face-hidden {
+  border: 2px dashed color-mix(in srgb, var(--text) 28%, transparent);
+  color: var(--muted);
+}
+
+.face-hidden .set-num {
+  background: transparent;
+  border: 2px dashed color-mix(in srgb, var(--text) 35%, transparent);
+  color: var(--text-2);
+}
+
+.hidden-hint {
+  flex: 1;
+  font-size: 14px;
+}
+
+.hidden-mark {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-2);
+  padding-right: 6px;
+}
+
+button.flip-card:hover .face-hidden,
+button.flip-card:focus-visible .face-hidden {
+  border-color: var(--accent);
+  color: var(--text-2);
+}
+
+button.flip-card:active .flip-inner {
+  transform: scale(0.98);
 }
 
 .set-num {
@@ -495,8 +560,12 @@ input[type='text']:focus {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .set-item {
+  .set-item.is-new {
     animation: none;
+  }
+
+  .flip-inner {
+    transition: none;
   }
 }
 

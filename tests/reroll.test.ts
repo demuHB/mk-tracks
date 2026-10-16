@@ -3,7 +3,9 @@ import { saveRaceFromDrafts } from '../src/domain/drivers';
 import {
   applyManualSelection,
   generateSet,
+  isRevealed,
   isSetUndoable,
+  revealTrack,
   toggleSelection,
   undoCurrentSet,
 } from '../src/domain/tracks';
@@ -82,5 +84,37 @@ describe('Neu würfeln', () => {
     applyManualSelection(s);
     expect(s.counter).toBe(before.counter + 1);
     for (const t of s.tracks.slice(0, 8)) expect(s.trackStats[t]).toBe(before.trackStats[t] + 1);
+  });
+});
+
+describe('Aufdecken', () => {
+  it('gewürfelte Sets zeigen nur die erste Strecke', () => {
+    const s = state();
+    const set = generateSet(s);
+    expect(set.tracks.map((_, i) => isRevealed(set, i))).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+    revealTrack(s, 3);
+    revealTrack(s, 3);
+    expect(set.revealed).toEqual([0, 3]);
+    revealTrack(s, 99);
+    expect(set.revealed).toEqual([0, 3]);
+  });
+
+  it('manuell gewählte und ältere Sets sind komplett sichtbar', () => {
+    const s = state();
+    s.selectedTracks = [];
+    for (const t of s.tracks.slice(0, 8)) toggleSelection(s, t);
+    const manual = applyManualSelection(s);
+    expect(manual.tracks.every((_, i) => isRevealed(manual, i))).toBe(true);
+    const old = { ...manual, revealed: undefined };
+    expect(isRevealed(old, 5)).toBe(true);
   });
 });

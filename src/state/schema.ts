@@ -48,6 +48,8 @@ export interface CurrentSet {
   setNumber?: number;
   /** true, sobald für dieses Set ein Ergebnis gespeichert wurde. */
   played?: boolean;
+  /** Indizes der bereits aufgedeckten Strecken. Fehlt = alle aufgedeckt (ältere Sets). */
+  revealed?: number[];
 }
 
 export type ThemeSetting = 'system' | 'dark' | 'light';
