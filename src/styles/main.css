@@ -1148,3 +1148,33 @@ input[type='text']:focus {
   background: var(--danger);
   color: #fff;
 }
+
+/* ===== Tab-Wechsel per Wischen ===== */
+.slide-from-right {
+  animation: slide-from-right 0.22s ease-out;
+}
+
+.slide-from-left {
+  animation: slide-from-left 0.22s ease-out;
+}
+
+@keyframes slide-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes slide-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-from-right,
+  .slide-from-left {
+    animation: none;
+  }
+}

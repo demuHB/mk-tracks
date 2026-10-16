@@ -18,6 +18,9 @@ export interface DriverSummary {
   podiumRate: number | null;
 }
 
+/** Mindestanzahl Rennen an einem Abend für den Rekord „Bester Abend“. */
+export const BEST_SESSION_MIN_RACES = 2;
+
 export const winsLabel = (n: number) => (n === 1 ? '1 Sieg' : `${n} Siege`);
 
 const avg = (xs: number[]): number | null => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
@@ -271,7 +274,11 @@ export function records(races: NormalizedRace[], drivers: string[]): RecordEntry
   let mostWins: { driver: string; wins: number; key: string } | null = null;
   for (const s of sessions(races, drivers)) {
     for (const st of s.standings) {
-      if (st.races >= 3 && st.avgPosition !== null && (!bestSession || st.avgPosition < bestSession.avg)) {
+      if (
+        st.races >= BEST_SESSION_MIN_RACES &&
+        st.avgPosition !== null &&
+        (!bestSession || st.avgPosition < bestSession.avg)
+      ) {
         bestSession = { driver: st.driver, avg: st.avgPosition, key: s.key };
       }
       if (st.wins > 0 && (!mostWins || st.wins > mostWins.wins)) {
@@ -289,7 +296,7 @@ export function records(races: NormalizedRace[], drivers: string[]): RecordEntry
   }
   if (bestSession) {
     out.push({
-      label: 'Bester Abend (Ø-Platz, ab 3 Rennen)',
+      label: `Bester Abend (Ø-Platz, ab ${BEST_SESSION_MIN_RACES} Rennen)`,
       driver: bestSession.driver,
       value: `Ø ${bestSession.avg.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       detail: formatSessionKey(bestSession.key),
