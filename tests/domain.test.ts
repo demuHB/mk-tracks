@@ -153,6 +153,17 @@ describe('Statistiken', () => {
     const rec = records(races, drivers);
     expect(rec.find((r) => r.label === 'Längste Siegesserie')?.driver).toBe('Dennis');
     expect(rec.find((r) => r.label === 'Meiste Punkte')?.value).toBe('110 Pkt.');
+    // Dennis: Ø (3 + 1 + 1 + 2) / 4 = 1,75 an einem Abend
+    expect(rec.find((r) => r.label.startsWith('Bester Abend'))?.value).toBe('Ø 1,75');
+  });
+
+  it('Bester Abend zählt ab 2 Rennen', () => {
+    const two = races.slice(0, 2);
+    const rec = records(two, drivers);
+    expect(rec.find((r) => r.label === 'Bester Abend (Ø-Platz, ab 2 Rennen)')).toBeDefined();
+    expect(
+      records(races.slice(0, 1), drivers).find((r) => r.label.startsWith('Bester Abend')),
+    ).toBeUndefined();
   });
 });
 

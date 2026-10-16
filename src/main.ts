@@ -5,6 +5,7 @@ import { initStore, subscribe } from './state/store';
 import { destroyCharts, runMounts } from './ui/charts';
 import { h, icon } from './ui/dom';
 import { setNavigator, type TabId } from './ui/nav';
+import { setupSwipe } from './ui/swipe';
 import { renderMore } from './ui/views/more';
 import { renderResults } from './ui/views/results';
 import { renderSet } from './ui/views/set';
@@ -81,7 +82,7 @@ function render(): void {
   runMounts();
 }
 
-function navigateTo(tab: TabId): void {
+function navigateTo(tab: TabId, slideFrom?: 'left' | 'right'): void {
   if (tab !== currentTab) {
     currentTab = tab;
     try {
@@ -90,11 +91,17 @@ function navigateTo(tab: TabId): void {
       /* ignorieren */
     }
     render();
+    if (slideFrom) main.firstElementChild?.classList.add(`slide-from-${slideFrom}`);
     window.scrollTo({ top: 0 });
   }
 }
 
 setNavigator(navigateTo);
+setupSwipe((dir) => {
+  const i = TABS.findIndex((t) => t.id === currentTab);
+  const next = TABS[dir === 'left' ? i + 1 : i - 1];
+  if (next) navigateTo(next.id, dir === 'left' ? 'right' : 'left');
+});
 subscribe((s) => {
   state = s;
   const y = window.scrollY;
